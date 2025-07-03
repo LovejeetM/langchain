@@ -95,3 +95,12 @@ state = {'know_base' : KnowledgeBase()}
 state['input'] = "My name is Carmen Sandiego! Guess where I am! Hint: It's somewhere in the United States."
 state = info_update.invoke(state)
 print(state)
+
+
+state['input'] = "I'm in a place considered the birthplace of Jazz."
+state = info_update.invoke(state)
+print(state)
+
+state['input'] = "Yeah, I'm in New Orleans... How did you know?"
+state = info_update.invoke(state)
+print(state)
