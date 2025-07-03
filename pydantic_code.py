@@ -97,6 +97,7 @@ state = info_update.invoke(state)
 print(state)
 
 
+
 state['input'] = "I'm in a place considered the birthplace of Jazz."
 state = info_update.invoke(state)
 print(state)
