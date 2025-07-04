@@ -133,3 +133,56 @@ known_info = KnowledgeBase()
 extractor = RExtract(KnowledgeBase, instruct_llm, parser_prompt)
 results = extractor.invoke({'info_base' : known_info, 'input' : 'My message'})
 known_info = results['info_base']
+
+
+from langchain.schema.runnable import (
+    RunnableBranch,
+    RunnableLambda,
+    RunnableMap,       
+    RunnablePassthrough,
+)
+from langchain.schema.runnable.passthrough import RunnableAssign
+
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.messages import BaseMessage, SystemMessage, ChatMessage, AIMessage
+from typing import Iterable
+
+external_prompt = ChatPromptTemplate.from_messages([
+    ("system", (
+        "You are a chatbot for SkyFlow Airlines, and you are helping a customer with their issue."
+        " Please chat with them! Stay concise and clear!"
+        " Your running knowledge base is: {know_base}."
+        " This is for you only; Do not mention it!"
+        " \nUsing that, we retrieved the following: {context}\n"
+        " If they provide info and the retrieval fails, ask to confirm their first/last name and confirmation."
+        " Do not ask them any other personal info."
+        " If it's not important to know about their flight, do not ask."
+        " The checking happens automatically; you cannot check manually."
+    )),
+    ("assistant", "{output}"),
+    ("user", "{input}"),
+])
+
+class KnowledgeBase(BaseModel):
+    first_name: str = Field('unknown', description="Chatting user's first name, `unknown` if unknown")
+    last_name: str = Field('unknown', description="Chatting user's last name, `unknown` if unknown")
+    confirmation: Optional[int] = Field(None, description="Flight Confirmation Number, `-1` if unknown")
+    discussion_summary: str = Field("", description="Summary of discussion so far, including locations, issues, etc.")
+    open_problems: str = Field("", description="Topics that have not been resolved yet")
+    current_goals: str = Field("", description="Current goal for the agent to address")
+
+parser_prompt = ChatPromptTemplate.from_template(
+    "You are a chat assistant representing the airline SkyFlow, and are trying to track info about the conversation."
+    " You have just received a message from the user. Please fill in the schema based on the chat."
+    "\n\n{format_instructions}"
+    "\n\nOLD KNOWLEDGE BASE: {know_base}"
+    "\n\nASSISTANT RESPONSE: {output}"
+    "\n\nUSER MESSAGE: {input}"
+    "\n\nNEW KNOWLEDGE BASE: "
+)
+
+chat_llm = ChatNVIDIA(model="meta/llama3-70b-instruct") | StrOutputParser()
+instruct_llm = ChatNVIDIA(model="mistralai/mixtral-8x22b-instruct-v0.1") | StrOutputParser()
+
+external_chain = external_prompt | chat_llm
+
