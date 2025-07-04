@@ -48,7 +48,7 @@ def RExtract(pydantic_class, llm, prompt):
             .replace("\]", "]")
             .replace("\[", "[")
         )
-        # print(string)  ## Good for diagnostics
+        # print(string)  
         return string
     return instruct_merge | prompt | llm | preparse | parser
 
@@ -84,7 +84,7 @@ parser_prompt = ChatPromptTemplate.from_template(
     "\n\nNEW KNOWLEDGE BASE:"
 )
 
-## Switch to a more powerful base model
+
 instruct_llm = ChatNVIDIA(model="mistralai/mixtral-8x22b-instruct-v0.1") | StrOutputParser()
 
 extractor = RExtract(KnowledgeBase, instruct_llm, parser_prompt)
