@@ -186,3 +186,10 @@ instruct_llm = ChatNVIDIA(model="mistralai/mixtral-8x22b-instruct-v0.1") | StrOu
 
 external_chain = external_prompt | chat_llm
 
+from langchain.schema.runnable import RunnableBranch
+RunnableBranch(
+    ((lambda x: 1 in x), RPrint("Has 1 (didn't check 2): ")),
+    ((lambda x: 2 in x), RPrint("Has 2 (not 1 though): ")),
+    RPrint("Has neither 1 not 2: ")
+).invoke([2, 1, 3]); 
+
