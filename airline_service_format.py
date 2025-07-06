@@ -9,6 +9,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain.schema.runnable.passthrough import RunnableAssign
 from functools import partial
 from dotenv import load_dotenv
+from operator import itemgetter
 import os
 
 load_dotenv()
@@ -66,7 +67,7 @@ external_prompt = ChatPromptTemplate.from_template(
 
 basic_chain = external_prompt | instruct_llm
 
-# Also, providing the infor to only authorized user
+# Also, providing the info to only authorized user
 basic_chain.invoke({
     'input' : 'Can you please tell me when I need to get to the airport?',
     'context' : get_flight_info({"first_name" : "Jane", "last_name" : "Doe", "confirmation" : 12345}),
@@ -182,14 +183,59 @@ parser_prompt = ChatPromptTemplate.from_template(
 )
 
 chat_llm = ChatNVIDIA(model="meta/llama3-70b-instruct") | StrOutputParser()
-instruct_llm = ChatNVIDIA(model="mistralai/mixtral-8x22b-instruct-v0.1") | StrOutputParser()
+instruct_llm = ChatNVIDIA(model="mistralai/mistral-7b-instruct-v0.2") | StrOutputParser()
 
 external_chain = external_prompt | chat_llm
 
-from langchain.schema.runnable import RunnableBranch
-RunnableBranch(
-    ((lambda x: 1 in x), RPrint("Has 1 (didn't check 2): ")),
-    ((lambda x: 2 in x), RPrint("Has 2 (not 1 though): ")),
-    RPrint("Has neither 1 not 2: ")
-).invoke([2, 1, 3]); 
+knowbase_getter = lambda x: RExtract(KnowledgeBase, instruct_llm, parser_prompt)
+
+
+database_getter = lambda x: itemgetter('know_base') | get_key | get_flight_info
+
+internal_chain = (
+    RunnableAssign({'know_base' : knowbase_getter})
+    | RunnableAssign({'context' : database_getter})
+)
+
+state = {'know_base' : KnowledgeBase()}
+
+def chat_gen(message, history=[], return_buffer=True):
+    global state
+    state['input'] = message
+    state['history'] = history
+    state['output'] = "" if not history else history[-1][1]
+
+    state = internal_chain.invoke(state)
+    print("State after chain run:")
+    print({k:v for k,v in state.items() if k != "history"})
+
+    ## Streaming the results
+    buffer = ""
+    for token in external_chain.stream(state):
+        buffer += token
+        yield buffer if return_buffer else token
+
+def queue_fake_streaming_gradio(chat_stream, history = [], max_questions=8):
+
+    for human_msg, agent_msg in history:
+        if human_msg: print("\n[ Human ]:", human_msg)
+        if agent_msg: print("\n[ Agent ]:", agent_msg)
+
+    for _ in range(max_questions):
+        message = input("\n[ Human ]: ")
+        print("\n[ Agent ]: ")
+        history_entry = [message, ""]
+        for token in chat_stream(message, history, return_buffer=False):
+            print(token, end='')
+            history_entry[1] += token
+        history += [history_entry]
+        print("\n")
+
+chat_history = [[None, "Hello! I'm your SkyFlow agent! How can I help you?"]]
+
+## Simulating the queueing of a streaming gradio interface, using python input
+queue_fake_streaming_gradio(
+    chat_stream = chat_gen,
+    history = chat_history
+)
 
