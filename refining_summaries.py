@@ -42,6 +42,5 @@ def RExtract(pydantic_class, llm, prompt):
             .replace("\]", "]")
             .replace("\[", "[")
         )
-        # print(string)  ## Good for diagnostics
         return string
     return instruct_merge | prompt | llm | preparse | parser
