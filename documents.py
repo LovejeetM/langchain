@@ -80,3 +80,33 @@ partial response, before all partial responses are again\nsummarized in a final 
 sensemaking\nquestions over datasets in the 1 million token range, we show that GraphRAG\nleads to substantial improvements over a
 conventional RAG baseline for both the\ncomprehensiveness and diversity of generated answers.'
 }  """
+
+
+
+
+
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1200,
+    chunk_overlap=100,
+    separators=["\n\n", "\n", ".", ";", ",", " ", ""],
+)
+
+# documents[0].page_content = documents[0].page_content.replace(". .", "")
+docs_split = text_splitter.split_documents(documents)
+
+# def include_doc(doc):
+#     ## Some chunks will be overburdened with useless numerical data, so we'll filter it out
+#     string = doc.page_content
+#     if len([l for l in string if l.isalpha()]) < (len(string)//2):
+#         return False
+#     return True
+
+# docs_split = [doc for doc in docs_split if include_doc(doc)]
+print(len(docs_split))
+
+for i in (0, 1, 2, 15, -1):
+    pprint(f"[Document {i}]")
+    print(docs_split[i].page_content)
+    pprint("="*64)
