@@ -81,6 +81,52 @@ summary_prompt = ChatPromptTemplate.from_template(
 )
 
 
+def RExtract(pydantic_class, llm, prompt):
+    '''
+    Runnable Extraction module
+    Returns a knowledge dictionary populated by slot-filling extraction
+    '''
+    parser = PydanticOutputParser(pydantic_object=pydantic_class)
+    instruct_merge = RunnableAssign({'format_instructions' : lambda x: parser.get_format_instructions()})
+    def preparse(string):
+        if '{' not in string: string = '{' + string
+        if '}' not in string: string = string + '}'
+        string = (string
+            .replace("\\_", "_")
+            .replace("\n", " ")
+            .replace("\]", "]")
+            .replace("\[", "[")
+        )
+        # print(string)  
+        return string
+    return instruct_merge | prompt | llm | preparse | parser
 
 
+latest_summary = ""
 
+
+def RSummarizer(knowledge, llm, prompt, verbose=False):
+    '''
+    Exercise: Create a chain that summarizes
+    '''
+    def summarize_docs(docs):        
+        parse_chain = RunnableAssign({'info_base' : RExtract(knowledge.__class__, llm, prompt)})
+        state = {'info_base' : knowledge}
+
+        global latest_summary  
+        
+        for i, doc in enumerate(docs):
+            state['input'] = doc.page_content
+            state = parse_chain.invoke(state)
+
+            assert 'info_base' in state 
+            if verbose:
+                print(f"Considered {i+1} documents")
+                pprint(state['info_base'])
+                latest_summary = state['info_base']
+                clear_output(wait=True)
+
+        return state['info_base']
+
+
+pprint(latest_summary)
