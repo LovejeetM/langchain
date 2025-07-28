@@ -75,3 +75,48 @@ plt.xlabel("Query Embeddings (of queries)")
 plt.ylabel("Query Embeddings (of documents)")
 plt.show()
 
+expound_prompt = ChatPromptTemplate.from_template(
+    "Generate part of a longer story that could reasonably answer all"
+    " of these questions somewhere in its contents: {questions}\n"
+    " Make sure the passage only answers the following concretely: {q1}."
+    " Give it some weird formatting, and try not to answer the others."
+    " Do not include any commentary like 'Here is your response'"
+)
+
+expound_chain = (
+    {'q1' : itemgetter(0), 'questions' : itemgetter(1)} 
+    | expound_prompt 
+    | instruct_llm
+    | StrOutputParser()
+)
+
+longer_docs = []
+for i, q in enumerate(queries):
+    ## TODO: Invoke the expound_chain pipeline as appropriate
+    longer_doc = ""
+    longer_doc = expound_chain.invoke([q, queries])
+    print(f"\n\n[Query {i+1}]")
+    print(q)
+    print(f"\n\n[Document {i+1}]")
+    print(longer_doc)
+    print("-"*64)
+    longer_docs += [longer_doc]
+
+
+longer_docs_cut = [doc[:2048] for doc in longer_docs]
+
+q_long_embs = [embedder._embed([doc], model_type='query')[0] for doc in longer_docs_cut]
+d_long_embs = [embedder._embed([doc], model_type='passage')[0] for doc in longer_docs_cut]
+
+
+plt.figure(figsize=(12, 6))
+plt.subplot(1, 2, 1)
+plot_cross_similarity_matrix(q_embeddings, q_long_embs)
+plt.xlabel("Query Embeddings (of queries)")
+plt.ylabel("Query Embeddings (of long documents)")
+
+plt.subplot(1, 2, 2)
+plot_cross_similarity_matrix(q_embeddings, d_long_embs)
+plt.xlabel("Query Embeddings (of queries)")
+plt.ylabel("Document Embeddings (of long documents)")
+plt.show()
