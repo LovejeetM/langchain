@@ -85,23 +85,23 @@ parser_prompt = ChatPromptTemplate.from_template(
 )
 
 
-instruct_llm = ChatNVIDIA(model="mistralai/mixtral-8x22b-instruct-v0.1") | StrOutputParser()
+# instruct_llm = ChatNVIDIA(model="mistralai/mixtral-8x22b-instruct-v0.1") | StrOutputParser()
 
-extractor = RExtract(KnowledgeBase, instruct_llm, parser_prompt)
-info_update = RunnableAssign({'know_base' : extractor})
+# extractor = RExtract(KnowledgeBase, instruct_llm, parser_prompt)
+# info_update = RunnableAssign({'know_base' : extractor})
 
-## Initialize the knowledge base and see what you get
-state = {'know_base' : KnowledgeBase()}
-state['input'] = "My name is Carmen Sandiego! Guess where I am! Hint: It's somewhere in the United States."
-state = info_update.invoke(state)
-print(state)
+# ## Initialize the knowledge base and see what you get
+# state = {'know_base' : KnowledgeBase()}
+# state['input'] = "My name is Carmen Sandiego! Guess where I am! Hint: It's somewhere in the United States."
+# state = info_update.invoke(state)
+# print(state)
 
 
 
-state['input'] = "I'm in a place considered the birthplace of Jazz."
-state = info_update.invoke(state)
-print(state)
+# state['input'] = "I'm in a place considered the birthplace of Jazz."
+# state = info_update.invoke(state)
+# print(state)
 
-state['input'] = "Yeah, I'm in New Orleans... How did you know?"
-state = info_update.invoke(state)
-print(state)
+# state['input'] = "Yeah, I'm in New Orleans... How did you know?"
+# state = info_update.invoke(state)
+# print(state)
